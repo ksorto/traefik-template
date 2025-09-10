@@ -1,0 +1,2 @@
+# This file ensures the dynamic directory is tracked by git
+# while keeping the actual configuration files private
