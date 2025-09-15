@@ -57,3 +57,37 @@ services:
 
     networks:
       - traefik
+
+  # Proxy service for your local app running on localhost:3000
+  app-proxy:
+    image: nginx:alpine
+    container_name: app-proxy
+    restart: unless-stopped
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      # HTTP router: redirect to HTTPS
+      - "traefik.http.routers.post-app.rule=Host(`post.adhere.local`)"
+      - "traefik.http.routers.post-app.entrypoints=web"
+      - "traefik.http.routers.post-app.middlewares=post-app-https-redirect"
+
+      # HTTPS router
+      - "traefik.http.routers.post-app-secure.rule=Host(`post.adhere.local`)"
+      - "traefik.http.routers.post-app-secure.entrypoints=websecure"
+      - "traefik.http.routers.post-app-secure.tls=true"
+
+      # Service configuration - proxy to localhost:3000
+      - "traefik.http.services.post-app.loadbalancer.server.port=80"
+
+      # Middleware: HTTP -> HTTPS
+      - "traefik.http.middlewares.post-app-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.post-app-https-redirect.redirectscheme.permanent=true"
+
+    networks:
+      - traefik
